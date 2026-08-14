@@ -1,0 +1,6 @@
+# docs/operator-quickstart.md の手順が生成するもの。
+# この repo に build 成果物は入れない（wrangler.jsonc の main が指す
+# svelte/.svelte-kit/cloudflare/_worker.js も生成物であって、追跡対象ではない）。
+node_modules/
+.svelte-kit/
+.wrangler/
