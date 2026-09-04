@@ -1,13 +1,13 @@
 {
   "name": "kotodama-mk7r3x9p",
-  "main": "svelte/.svelte-kit/cloudflare/_worker.js",
+  "main": "./src/app.ts",
   "compatibility_date": "2025-03-17",
   "compatibility_flags": [
     "nodejs_compat",
     "nodejs_als"
   ],
   "assets": {
-    "directory": "./svelte/.svelte-kit/cloudflare/client",
+    "directory": "../../web/dist",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"
