@@ -2,176 +2,96 @@
 
 **このページの手順は 2026-08-14 (UTC) に、`node_modules` を消した状態から上から順に
 実行して出力を確認したものだけを載せている。** 実行できないものは「やり方」ではなく
-**なぜ今できないか**を書く（§6）。
+**なぜ今できないか**を書く（§6）。UI は **2026-09-04 に svelte→cljs へ移行済み** —
+§1 は書き換え、§2〜§5 の SvelteKit 前提の手順は履歴として §8 に残した。
 
-前提: Node と npm。実測に使ったのは **node v26.3.0 / npm 11.16.0**。
-作業ディレクトリは断りが無い限り `appview/etzhayyim-wasm-market-mk7r3x9p/svelte`。
+前提: Node と npm と Clojure CLI（`clojure` コマンド）。実測に使ったのは
+**node v26.3.0 / npm 11.16.0**。作業ディレクトリは断りが無い限り repo ルート。
 
-## 1. ビルドする（所要 1 分弱）
+## 1. ビルドする（shadow-cljs + reagent + kotoba-ui、murakumo-studio構成）
 
 ```bash
-cd appview/etzhayyim-wasm-market-mk7r3x9p/svelte
 npm install
-npm run build
+npx shadow-cljs compile app
 ```
 
-`npm install` は最後にこう警告するが、**このあとの手順はすべて通る**（実測）:
+実測（2026-09-04）: `[:app] Build completed. (95 files, 94 compiled, 0 warnings, 18.02s)`。
 
-```
-npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
-npm warn allow-scripts   esbuild@0.25.12 (postinstall: node install.js)
-npm warn allow-scripts   esbuild@0.28.1  (postinstall: node install.js)
-npm warn allow-scripts   workerd@1.20260811.1 (postinstall: node install.js)
-```
+生成物は `appview/etzhayyim-wasm-market-mk7r3x9p/web/dist/js/main.js`。
+`web/dist/index.html`（= `web/index.html` と同一内容）が `js/main.js` と
+`vendor/kotoba-ui.css` を読む。`vendor/kotoba-ui.css` は
+`orgs/kotoba-lang/murakumo-studio` 由来の checked-in ファイルで、compile では生成されない。
 
-postinstall が保留されたままでも `vite build` も `wrangler dev`（§5）も完走する。
-**この警告を見て手を止めないこと** —— 実際に踏んで確認済み。
+生成される `node_modules/` `.shadow-cljs/` `.cpcache/` `package-lock.json` は
+`.gitignore` 済み（この repo は lockfile を追跡しない方針）。
 
-> **重い build は resource governor を通す**（この workspace 全体の規則）。
-> ```bash
-> node <superproject>/scripts/resource-guard.mjs run build -- npm run build
-> ```
-
-成功すると `✓ built in ...` が 2 回（client / server）出る。
-
-生成される `node_modules/` `.svelte-kit/` `.wrangler/` は `.gitignore` 済み。
-**`package-lock.json` だけは ignore していない** —— この repo は lockfile を追跡して
-おらず、コミットするかどうかは repo の所有者が決めることなので、こちらで既定を
-作らなかった。`npm install` 後に untracked として見えるのはそのため。
-
-## 2. ビルド成果物が wrangler の設定と一致することを確かめる
-
-`wrangler.jsonc` の `main` と `assets.directory` が指す先が、実際に生成されているか:
+## 2. ローカルで面を叩く
 
 ```bash
-ls -la .svelte-kit/cloudflare/_worker.js
-ls    .svelte-kit/cloudflare/client
+cd appview/etzhayyim-wasm-market-mk7r3x9p/web/dist
+python3 -m http.server 8731
 ```
 
-実測:
-
-```
--rw-r--r--  1 ...  4335 Aug 15 01:01 .svelte-kit/cloudflare/_worker.js
-_app
-_headers
-```
-
-**この確認を飛ばさないこと。** `wrangler.jsonc` の `main` は `src/app.ts` ではなく
-SvelteKit の生成物を指しており、両者は動作が違う（README の「2 つのずれ」を参照）。
-
-## 3. 型検査
+別のシェルから:
 
 ```bash
-npm run check
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8731/                  # → 200
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8731/js/main.js        # → 200
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8731/vendor/kotoba-ui.css  # → 200
 ```
 
-実測: `COMPLETED 142 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS`。
+実測（2026-09-04）: 3 行とも 200。`/` の HTML は `<title>etzhayyim-wasm-market-mk7r3x9p</title>`
+を持ち、`js/main.js` と `vendor/kotoba-ui.css` を参照する。ブラウザで開くと
+reagent 製の appview 画面（Project / Routes / XRPC ファクト + Public Routes /
+Runtime Bindings / Source パネル）が描画される。UI の実装は
+`src/cloud_itonami/market/{state,ui,desktop}.cljs`。
 
-**変更を入れる前に一度これを通す。** 0 errors から始まっていることを確かめておかないと、
-自分の変更が壊したのかどうかを後で判定できない。
+## 3. Worker として動かす（wrangler）
 
-## 4. ローカルで起動して面を叩く（vite preview）
-
-```bash
-npm run preview -- --port 4319
-```
-
-別のシェルから。**期待値は「全部 200」ではない** —— 下の 4 行が揃って初めて正常:
-
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4319/
-#   → 200   ランディングが描画される（<title>etzhayyim-wasm-market-mk7r3x9p</title>）
-
-curl -s -o /dev/null -w '%{http_code}\n' -X OPTIONS http://localhost:4319/xrpc/com.etzhayyim.market.listOffer
-#   → 204   CORS preflight
-
-curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4319/xrpc/com.etzhayyim.market.listOffer
-#   → 405   GET は無い。+server.ts は POST と OPTIONS しか export していない
-
-curl -s -X POST -H 'content-type: application/json' -d '{}' \
-     http://localhost:4319/xrpc/com.etzhayyim.market.listOffer
-#   → 500 {"message":"Internal Error"}
-```
-
-**最後の 500 は正常な結果である。** `+server.ts` は受け取った body を
-`AGENTGATEWAY_MCP_ROUTER_URL`（既定 `https://mcp.etzhayyim.com/xrpc/com.etzhayyim.mcp.message`）へ
-転送するが、**そのホストは DNS に存在しない**（§6）。つまりこの 500 は
-「壊れている」ではなく「上流が居ない」を意味する。
-
-終わったら止める: `pkill -f "vite preview"`
-
-## 5. Worker として動かす・設定を検証する（wrangler）
-
-**`wrangler` は `package.json` に書かれていないが、`@sveltejs/adapter-cloudflare@7.2.9`
-の依存として入る**（実測 `wrangler@4.123.0`）。したがって別途インストールは要らない。
-`wrangler.jsonc` が在るのは `svelte/` の**ひとつ上**なので、cd する:
+`wrangler.jsonc` は `main: ./src/app.ts`（XRPC facade + `/health`）で、
+静的アセットは `assets.directory: ../../web/dist` から配る。svelte→cljs 移行後、
+`kotodama.jsonld` の `component.path` と deploy 対象は同じ program を指す。
 
 ```bash
 cd appview/etzhayyim-wasm-market-mk7r3x9p
+npx wrangler dev --port 4321 --local
 ```
-
-### 5a. 設定とバンドルを検証する（デプロイしない）
 
 ```bash
-./svelte/node_modules/.bin/wrangler deploy --dry-run --outdir /tmp/mkt-dryrun
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4321/          # → 200（web/dist の UI）
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4321/health    # → 200（app.ts の /health）
 ```
 
-実測: exit 0。`Read 23 files from the assets directory` /
-`Total Upload: 420.94 KiB / gzip: 94.69 KiB` と、`env.ASSETS` + 10 個の
-Environment Variable が解決されることを表示して終わる。
+XRPC の往復は §6 のとおり上流 DNS 不在のため不可（移行前から変わらない）。
 
-**既知の警告 1 件**（無害だが、消したいなら `wrangler.jsonc` の `rules` に
-`"fallthrough": true` を足す）:
-
-```
-▲ WARNING The module rule {"type":"CompiledWasm","globs":["**/*.wasm"]} does not have a fallback
-```
-
-### 5b. Worker をローカルで起動する
+## 4. 変更を入れるときの最小ループ
 
 ```bash
-./svelte/node_modules/.bin/wrangler dev --port 4321 --local
+npx shadow-cljs compile app     # Build completed, 0 errors を確認
+git diff --stat                 # web/dist 配下の再生成差分を目視
 ```
 
-`[wrangler:info] Ready on http://localhost:4321` が出るまで、**初回は 20〜30 秒**
-（workerd の取得を含む）、**2 回目以降は約 3 秒**（実測）。実測した挙動は §4 と同じ:
+`src/cloud_itonami/market/*.cljs` を編集したら compile して
+`web/dist/js/` を更新する（dist は追跡対象 — 参照実装
+`orgs/cloud-itonami/crypto-asset-freeze` と同じ方針）。
 
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4321/          # → 200
-curl -s -X POST -H 'content-type: application/json' -d '{}' \
-     http://localhost:4321/xrpc/com.etzhayyim.market.listOffer            # → 500（上流不在）
-```
-
-POST のとき wrangler のログに `✘ [ERROR] Uncaught Error: internal error` が出るのは、
-上流 fetch が DNS で失敗しているため。**`vite preview`（§4）との違いは
-`platform.env` が実際に注入されること** —— 転送先を差し替えて経路を試したいなら、
-`wrangler.jsonc` の `vars.AGENTGATEWAY_MCP_ROUTER_URL` を書き換えてこちらで動かす
-（`vite preview` では `platform.env` が無いので `+server.ts` の既定値が効き、上書きできない）。
-
-終わったら止める: `pkill -f "wrangler dev"`
-
-## 6. できないこと（と、その理由）
+## 5. できないこと（と、その理由）
 
 | やりたいこと | 今できない理由 |
 |---|---|
-| live に疎通する | `market.etzhayyim.com` / `mk7r3x9p.etzhayyim.com` とも **NXDOMAIN**（2026-08-14 UTC 実測） |
+| live に疎通する | `market.etzhayyim.com` / `mk7r3x9p.etzhayyim.com` とも **NXDOMAIN**（2026-08-14 UTC 実測。移行後も 2026-09-04 に変わらず） |
 | XRPC を往復させる | 上流 `mcp.etzhayyim.com` / `dispatcher.etzhayyim.com` とも **NXDOMAIN** |
-| `src/app.ts` の `/health` を叩く | そのファイルは**どこからも参照されていない**。ビルドにも deploy にも入らない（README 参照） |
 
-**この表は「壊れているものリスト」ではなく境界の記述。** §1〜§5 は実際に動く。
+**この表は「壊れているものリスト」ではなく境界の記述。** §1〜§3 は実際に動く。
 `wrangler deploy`（dry-run でない本番デプロイ）を**この quickstart は扱わない** ——
 宛先ホストが DNS に無い以上、今それを踏んでも確かめられることが無い。
 
-## 7. 変更を入れるときの最小ループ
+## 6. 移行履歴（旧 SvelteKit 構成、2026-09-04 に置き換え）
 
-```bash
-cd appview/etzhayyim-wasm-market-mk7r3x9p/svelte
-npm run check          # 変更前に 0 errors を確認
-# ... 編集 ...
-npm run check          # 失敗集合を比べる
-npm run build          # _worker.js が生成され続けることを確認
-cd .. && ./svelte/node_modules/.bin/wrangler deploy --dry-run --outdir /tmp/mkt-dryrun
-```
-
-この repo には**テストが 1 本も無い**（`package.json` に `test` script が無い）。したがって
-`check` と `build` と dry-run と §4/§5 の curl が、今あるすべての回帰検査である。
+移行前（2026-08-14 実測）は `appview/.../svelte/` の SvelteKit + Vite
+構成で、`vite build` → `.svelte-kit/cloudflare/_worker.js` を
+`wrangler.jsonc` の `main` に指していた。実測で判明していた問題
+（**_worker.js は scaffold page + XRPC proxy だけで、`src/app.ts` の
+ドメインコマンドを含まない** / `src/app.ts` がどこからも参照されない）
+は、移行によって `main: ./src/app.ts` + `assets: web/dist` に統一して解消した。
+README の Layout 節も参照。
