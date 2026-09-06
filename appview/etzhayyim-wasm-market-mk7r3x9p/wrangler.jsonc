@@ -1,4 +1,34 @@
 {
+  // NOTE: this app used to be built by SvelteKit's @sveltejs/adapter-cloudflare,
+  // which emitted a static client bundle (`assets.directory` pointed at
+  // `./svelte/.svelte-kit/cloudflare/client`) alongside a server-rendering
+  // Worker script (`main` pointed at
+  // `svelte/.svelte-kit/cloudflare/_worker.js`, generated from the SvelteKit
+  // route `svelte/src/routes/xrpc/[...path]/+server.ts`). The frontend
+  // (the static status page at `svelte/src/routes/+page.svelte`) was
+  // migrated to a plain ClojureScript (shadow-cljs + reagent + re-frame +
+  // jp-go-dds) static bundle with no server-rendering step — see cljs/ and
+  // the repo README. `assets.directory` now points at the cljs build
+  // output.
+  //
+  // `main` is NOT dropped and NOT repointed at the moved
+  // `src/xrpc-mcp-router-proxy.ts`. It is kept at `./src/app.ts`, unchanged
+  // from before this frontend migration: that file's own `fetch` handler
+  // implements its own `/xrpc/*` dispatch (to `DISPATCHER_URL`, for the
+  // fixed `MARKET_NSIDS` set) and falls through to
+  // `if (env.ASSETS) return env.ASSETS.fetch(request);` for everything
+  // else, so it genuinely needs to stay in front of the static assets —
+  // dropping `main` here would remove that live XRPC dispatch, not just a
+  // dead server-rendering path.
+  //
+  // The old SvelteKit route (`+server.ts`, a *different* XRPC proxy that
+  // forwarded to `AGENTGATEWAY_MCP_ROUTER_URL` as an MCP `tools/call`) was
+  // moved byte-for-byte (plus a header) to `src/xrpc-mcp-router-proxy.ts`.
+  // `src/app.ts` does not call into it, so it is preserved but unwired;
+  // reviving it is a separate product decision.
+  //
+  // This edit is UNVERIFIED — no local Wrangler run (dev server or deploy
+  // command) was made against it as part of this migration.
   "name": "kotodama-mk7r3x9p",
   "main": "./src/app.ts",
   "compatibility_date": "2025-03-17",
@@ -7,7 +37,7 @@
     "nodejs_als"
   ],
   "assets": {
-    "directory": "../../web/dist",
+    "directory": "./cljs/public",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"
@@ -18,7 +48,7 @@
     "APP_DESCRIPTION": "Capital-flow clearinghouse implementing ADR-2605011300 information-physics model (Q ∝ S × |A|² × ∇φ / friction) across 5 Phase-1 lanes",
     "APP_DISPLAY_NAME": "etzhayyim Market",
     "APP_EMBED_URL": "https://mk7r3x9p.etzhayyim.com/?embed=1",
-    "APP_FRAMEWORK": "sveltekit-edge-bff",
+    "APP_FRAMEWORK": "cljs-reagent-re-frame-jp-go-dds",
     "APP_NANOID": "mk7r3x9p",
     "APP_PERFORMER_TYPE": "service",
     "APP_UI_TYPE": "appview",

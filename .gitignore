@@ -1,6 +1,0 @@
-# Produced by the commands in docs/operator-quickstart.md. None of these are tracked.
-node_modules/
-package-lock.json
-.svelte-kit/
-.shadow-cljs/
-.cpcache/
