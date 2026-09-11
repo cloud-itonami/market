@@ -23,7 +23,7 @@
             "APP_NANOID" "APP_PERFORMER_TYPE" "APP_UI_TYPE"]
            @(rf/subscribe [:app/vars])))
     (is (true? @(rf/subscribe [:app/xrpc?])))
-    (is (= "appview/etzhayyim-wasm-market-mk7r3x9p/cljs/src/cloud_itonami/market/app.cljs"
+    (is (= "appview/etzhayyim-wasm-market-mk7r3x9p/cljs/src/cloud_itonami/market/app.cljk"
            @(rf/subscribe [:app/relative-path])))))
 
 (deftest routes-sub-reflects-db

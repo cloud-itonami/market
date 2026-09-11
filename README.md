@@ -39,7 +39,7 @@ reagent + re-frame + jp-go-dds の scaffold 形）。
 | `appview/etzhayyim-wasm-market-mk7r3x9p/src/xrpc-mcp-router-proxy.ts` | 旧 SvelteKit の `+server.ts`（AGENTGATEWAY_MCP_ROUTER_URL 宛の別の XRPC プロキシ）を byte-identical に保存したもの。**配線されていない**（header 参照） |
 | `appview/etzhayyim-wasm-market-mk7r3x9p/wrangler.jsonc` | Worker 定義。`main: ./src/app.ts`、静的アセットは `assets.directory: ./cljs/public`。変更の経緯は先頭のコメント block |
 | `appview/etzhayyim-wasm-market-mk7r3x9p/cljs/` | CLJS appview UI 一式（`deps.edn` / `shadow-cljs.edn` / `package.json` / `public/index.html` / `src/` / `test/`）。単一 document・単一 bundle（ADR-2608080100 single-page-app 規則） |
-| `appview/etzhayyim-wasm-market-mk7r3x9p/cljs/src/cloud_itonami/market/app.cljs` | reagent + re-frame 製 UI（旧 `+page.svelte` を 1:1 移植、jp-go-dds hiccup） |
+| `appview/etzhayyim-wasm-market-mk7r3x9p/cljs/src/cloud_itonami/market/app.cljk` | reagent + re-frame 製 UI（旧 `+page.svelte` を 1:1 移植、jp-go-dds hiccup） |
 | `appview/etzhayyim-wasm-market-mk7r3x9p/kotodama.jsonld` | actor 宣言（DID・lane・NSID・KPI） |
 | `CLAUDE.md` / `PROJECT.jsonld` | 上流由来の説明。**コードと一致していない**（後述、この migration の対象外） |
 | `README.edn` / `migration.edn` | 抽出時のメタデータ |
