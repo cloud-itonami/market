@@ -87,8 +87,8 @@ migration が決めることではない。
 
 | 対象 | 実測 |
 |---|---|
-| `npx shadow-cljs compile app` | **通る**（`Build completed. (111 files, 110 compiled, 0 warnings, 41.95s)`） |
-| `npx shadow-cljs compile test && node out/tests.js` | **通る**（`Ran 5 tests containing 14 assertions. 0 failures, 0 errors.`） |
+| `amu compile --target wasm32-browser app` | **通る**（`Build completed. (111 files, 110 compiled, 0 warnings, 41.95s)`） |
+| `amu compile --target wasm32-browser test && node out/tests.js` | **通る**（`Ran 5 tests containing 14 assertions. 0 failures, 0 errors.`） |
 | `wrangler deploy` / `wrangler dev` | **未実行**（wrangler.jsonc の変更は UNVERIFIED、同ファイル冒頭のコメント参照） |
 
 ## 移行によって解消された「2 つのずれ」
