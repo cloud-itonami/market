@@ -14,7 +14,7 @@
 ```bash
 cd appview/etzhayyim-wasm-market-mk7r3x9p/cljs
 npm install
-npx shadow-cljs compile app
+amu compile --target wasm32-browser app
 ```
 
 実測: `[:app] Build completed. (111 files, 110 compiled, 0 warnings, 41.95s)`。
@@ -52,7 +52,7 @@ ADR-2608080100 single-page-app 規則）。
 
 ```bash
 cd appview/etzhayyim-wasm-market-mk7r3x9p/cljs
-npx shadow-cljs compile test
+amu compile --target wasm32-browser test
 node out/tests.js
 ```
 
