@@ -41,7 +41,7 @@ reagent + re-frame + jp-go-dds の scaffold 形）。
 | `appview/etzhayyim-wasm-market-mk7r3x9p/cljs/` | CLJS appview UI 一式（`deps.edn` / `shadow-cljs.edn` / `package.json` / `public/index.html` / `src/` / `test/`）。単一 document・単一 bundle（ADR-2608080100 single-page-app 規則） |
 | `appview/etzhayyim-wasm-market-mk7r3x9p/cljs/src/cloud_itonami/market/app.cljk` | reagent + re-frame 製 UI（旧 `+page.svelte` を 1:1 移植、jp-go-dds hiccup） |
 | `appview/etzhayyim-wasm-market-mk7r3x9p/kotodama.jsonld` | actor 宣言（DID・lane・NSID・KPI） |
-| `CLAUDE.md` / `PROJECT.jsonld` | 上流由来の説明。**コードと一致していない**（後述、この migration の対象外） |
+| `AGENTS.md` / `PROJECT.jsonld` | 上流由来の説明。**コードと一致していない**（後述、この migration の対象外） |
 | `README.edn` / `migration.edn` | 抽出時のメタデータ |
 
 ビルド・起動の手順は **[`docs/operator-quickstart.md`](docs/operator-quickstart.md)**。
@@ -101,9 +101,9 @@ migration が決めることではない。
 （旧移行の `../../web/dist` を経て）`./cljs/public` に統一された。これで
 `kotodama.jsonld` が名指す component と deploy 対象が同じ program を指す。
 
-**ずれ①（`CLAUDE.md` / `PROJECT.jsonld` が別のアプリ — 暗号資産ポートフォリオ管理 —
+**ずれ①（`AGENTS.md` / `PROJECT.jsonld` が別のアプリ — 暗号資産ポートフォリオ管理 —
 の話をしている）は依然として残っている。** 両者が説明する実装はこの repo に無く、
-`CLAUDE.md` 自身が「実装は `etzhayyim-project-global` の `global-ui-w5n8p3q6` にある」
+`AGENTS.md` 自身が「実装は `etzhayyim-project-global` の `global-ui-w5n8p3q6` にある」
 と書いている。この repo のコードが実装するのは資本フローの clearinghouse（offer /
 quote / settle / demand）で別物。修正権限は上流（`etzhayyim/root`）側にあり、
 このフロントエンド migration の対象外。
